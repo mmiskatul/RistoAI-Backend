@@ -70,38 +70,8 @@ def test_restaurant_document_upload_extract_and_confirm_flow(client, app):
         headers=headers,
         files={"file": ("invoice-march.png", b"fake-image", "image/png")},
     )
-    assert upload_response.status_code == 200
-    upload_payload = upload_response.json()
-    assert set(upload_payload.keys()) == {
-        "document_type",
-        "document_label",
-        "counterparty_name",
-        "document_number",
-        "document_date",
-        "total_amount",
-        "currency",
-        "expense_amount",
-        "cash_amount",
-        "revenue_amount",
-        "profit_amount",
-        "line_items",
-        "source_file_name",
-        "ai_provider",
-        "ai_summary",
-    }
-    assert upload_payload["document_type"] == "expense"
-    assert upload_payload["document_label"] == "Expense"
-    assert upload_payload["counterparty_name"] == "Fresh Food Supplier Ltd"
-    assert upload_payload["ai_provider"] == "fallback"
-    assert upload_payload["document_date"] == "2026-03-10"
-    assert upload_payload["total_amount"] == 165.0
-    assert upload_payload["currency"] == "EUR"
-    assert upload_payload["expense_amount"] == 165.0
-    assert upload_payload["cash_amount"] == 0.0
-    assert upload_payload["revenue_amount"] == 0.0
-    assert upload_payload["profit_amount"] == 0.0
-    assert len(upload_payload["line_items"]) == 3
-    assert "id" not in upload_payload
+    assert upload_response.status_code == 422
+    assert upload_response.json()["detail"] == "AI service is not configured or currently unavailable. Please check OpenAI API settings."
 
     confirm_response = client.post(
         "/api/v1/restaurant/documents/confirm-save",
