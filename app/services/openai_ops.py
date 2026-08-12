@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import asyncio
 import base64
@@ -13,6 +13,7 @@ from typing import Any, Awaitable, Callable, ClassVar
 import httpx
 
 from app.config.settings import get_settings
+from app.core.exceptions import ValidationException
 
 logger = logging.getLogger(__name__)
 
@@ -315,7 +316,7 @@ class OpenAIOperationsService:
         file_bytes: bytes,
     ) -> dict[str, Any]:
         if not self.enabled:
-            return self._fallback_invoice(file_name=file_name)
+            raise ValidationException("AI service is not configured or currently unavailable. Please check OpenAI API settings.")
 
         try:
             payload = await self._build_invoice_payload(
@@ -329,9 +330,11 @@ class OpenAIOperationsService:
                 return parsed
         except httpx.HTTPStatusError as exc:
             logger.warning("OpenAI invoice extraction rejected request for %s (%s): %s", file_name, content_type, exc)
+            raise ValidationException("AI service rejected the document processing request. Please ensure the image/document contains legible invoice details.") from exc
         except Exception as exc:  # noqa: BLE001
             logger.exception("OpenAI invoice extraction failed for %s", file_name, exc_info=exc)
-        return self._fallback_invoice(file_name=file_name)
+            raise ValidationException("Unable to extract invoice data from this document using AI. Please try again with a clearer image.") from exc
+        raise ValidationException("Failed to extract invoice data. The document could not be read properly by the AI service.")
 
     async def generate_business_insight(
         self,
