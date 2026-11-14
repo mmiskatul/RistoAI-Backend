@@ -24,3 +24,4 @@ Thumbs.db
 .venv/
 .gitignore
 node_modules
+config.bat
